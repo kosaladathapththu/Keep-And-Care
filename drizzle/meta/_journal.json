@@ -8,6 +8,13 @@
       "when": 1790412497464,
       "tag": "0000_quiet_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790566012184,
+      "tag": "0001_bitter_thundra",
+      "breakpoints": true
     }
   ]
 }

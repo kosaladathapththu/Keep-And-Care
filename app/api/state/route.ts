@@ -33,4 +33,4 @@ async function ensureState(){
 }
 
 export async function GET(){return Response.json(await ensureState())}
-export async function PUT(request:Request){const value=await request.json();if(!value||!Array.isArray(value.jobs)||!Array.isArray(value.transactions))return Response.json({error:'Invalid application state'},{status:400});await ensureState();await env.DB.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1').bind(JSON.stringify(value),new Date().toISOString()).run();return Response.json({ok:true})}
+export async function PUT(request:Request){const value=await request.json() as {jobs?:unknown;transactions?:unknown};if(!value||!Array.isArray(value.jobs)||!Array.isArray(value.transactions))return Response.json({error:'Invalid application state'},{status:400});await ensureState();await env.DB.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1').bind(JSON.stringify(value),new Date().toISOString()).run();return Response.json({ok:true})}

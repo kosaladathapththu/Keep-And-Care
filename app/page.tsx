@@ -38,7 +38,7 @@ const download=(name:string,type:string,body:string)=>{const a=document.createEl
 
 export default function Home(){
  const[data,setData]=useState<AppState>(seed); const[active,setActive]=useState('Overview'); const[query,setQuery]=useState(''); const[modal,setModal]=useState<'job'|'transaction'|'staff'|'master'|null>(null); const[notice,setNotice]=useState(''); const[report,setReport]=useState('Cash Flow Statement'); const[ready,setReady]=useState(false); const importRef=useRef<HTMLInputElement>(null);
- useEffect(()=>{fetch('/api/state').then(r=>r.ok?r.json():Promise.reject()).then(v=>setData(v)).catch(()=>{}).finally(()=>setReady(true))},[]);
+ useEffect(()=>{fetch('/api/state').then(r=>r.ok?r.json():Promise.reject()).then(v=>setData(v as AppState)).catch(()=>{}).finally(()=>setReady(true))},[]);
  const update=(next:AppState,message?:string)=>{setData(next);fetch('/api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(next)}).catch(()=>{});if(message){setNotice(message);setTimeout(()=>setNotice(''),3500)}};
  const filtered=useMemo(()=>data.jobs.filter(j=>`${j.id} ${j.customer} ${j.service} ${j.technician}`.toLowerCase().includes(query.toLowerCase())),[data.jobs,query]);
  const income=data.transactions.filter(t=>t.kind==='Income').reduce((s,t)=>s+t.amount,0), expenses=data.transactions.filter(t=>t.kind==='Expense').reduce((s,t)=>s+t.amount,0), outstanding=data.jobs.reduce((s,j)=>s+j.total-j.paid,0);
