@@ -1,3 +1,6 @@
+import { requireUser,sameOrigin,json,AuthError,authFailure } from '../../../lib/auth';
+import { authorizeStateChange,visibleState } from '../../permissions';
+import type { AppState } from '../../records';
 import { env } from 'cloudflare:workers';
 
 const seed = {
@@ -32,5 +35,5 @@ async function ensureState(){
   return JSON.parse(row.payload);
 }
 
-export async function GET(){return Response.json(await ensureState())}
-export async function PUT(request:Request){const value=await request.json() as {jobs?:unknown;transactions?:unknown};if(!value||!Array.isArray(value.jobs)||!Array.isArray(value.transactions))return Response.json({error:'Invalid application state'},{status:400});await ensureState();await env.DB.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1').bind(JSON.stringify(value),new Date().toISOString()).run();return Response.json({ok:true})}
+export async function GET(request:Request){try{const user=await requireUser(request);return json(visibleState(await ensureState() as AppState,user.role))}catch(error){return authFailure(error)}}
+export async function PUT(request:Request){try{sameOrigin(request);const user=await requireUser(request);if(Number(request.headers.get('content-length')||0)>2_000_000)throw new AuthError('Application update is too large.',413);const value=await request.json() as AppState;if(!value||!Array.isArray(value.jobs)||!Array.isArray(value.transactions))throw new AuthError('Invalid application state');const current=await ensureState() as AppState;let next:AppState;try{next=authorizeStateChange(current,value,user.role)}catch(error){throw new AuthError(error instanceof Error?error.message:'Access denied.',403)}const result=await env.DB.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1 AND payload = ?').bind(JSON.stringify(next),new Date().toISOString(),JSON.stringify(current)).run();if(!result.meta.changes)throw new AuthError('Records changed in another session. Reload before saving.',409);return json({ok:true})}catch(error){return authFailure(error)}}

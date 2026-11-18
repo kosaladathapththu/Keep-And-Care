@@ -1,0 +1,26 @@
+import type { CSSProperties } from 'react';
+const paths:Record<string,string>={
+ overview:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+ jobs:'M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2 M3 7h18v14H3z M3 12a23 23 0 0 0 18 0 M10 13h4',
+ customers:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M16 3a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-3-3.87 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+ staff:'M20 21v-2a7 7 0 0 0-14 0v2 M17 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M3 8l2 2 3-3',
+ finance:'M3 6h18v15H3z M3 10h18 M16 15h2 M7 3h11v3',
+ reports:'M14 2H5v20h14V7z M14 2v5h5 M8 17v-3 M12 17v-6 M16 17v-4',
+ settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z',
+ search:'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+ bell:'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
+ plus:'M12 5v14 M5 12h14',
+ arrow:'M5 12h14 M14 7l5 5-5 5',
+ download:'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5',
+ upload:'M12 16V4 M7 9l5-5 5 5 M4 16v5h16v-5',
+ check:'M5 12l4 4L19 6',
+ clock:'M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+ trend:'M3 17l6-6 4 4 8-10 M15 5h6v6',
+ help:'M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3 M12 17v.1 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
+ eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+ edit:'M16 3l5 5-12 12-6 1 1-6z M13 6l5 5',
+ delete:'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
+ close:'M6 6l12 12 M6 18L18 6',
+ snow:'M12 2v20 M3.3 7l17.4 10 M3.3 17L20.7 7 M9 4l3 3 3-3 M9 20l3-3 3 3 M3 10l4-1-1-4 M21 14l-4 1 1 4 M3 14l4 1-1 4 M21 10l-4-1 1-4',
+};
+export function Icon({name,size=20,style}:{name:string;size?:number;style?:CSSProperties}){return <svg className="ui-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={style}><path d={paths[name]||paths.jobs}/></svg>}
