@@ -1,4 +1,4 @@
-import { isRole } from '../app/permissions.ts';
+import { isRole,normalizeRole,hasFullAccess } from '../app/permissions.ts';
 import type { AppState } from '../app/records.ts';
 
 export type BackupUser={id:string;name:string;email:string;role:string;password_hash:string;active:number;created_at:string};
@@ -14,14 +14,15 @@ function validState(value:unknown):value is AppState|null{
 }
 export function isSystemBackup(value:unknown,currentDeveloperId:string):value is SystemBackup{
  if(!isObject(value)||value.format!=='keep-care-system-backup'||value.version!==1||!validDate(value.createdAt)||!validState(value.appState)||!Array.isArray(value.users)||!Array.isArray(value.audit))return false;
+ if(!value.users.some(item=>isObject(item)&&item.role==='Developer'&&item.active===1))return false;
  const ids=new Set<string>(),emails=new Set<string>();
  for(const item of value.users){
-  if(!isObject(item)||typeof item.id!=='string'||!item.id||typeof item.name!=='string'||!item.name||item.name.length>100||typeof item.email!=='string'||!isRole(item.role)||typeof item.password_hash!=='string'||!/^scrypt:16384:8:5:[a-f0-9]{32}:[a-f0-9]{64}$/.test(item.password_hash)||![0,1].includes(item.active as number)||!validDate(item.created_at))return false;
+  if(!isObject(item)||typeof item.id!=='string'||!item.id||typeof item.name!=='string'||!item.name||item.name.length>100||typeof item.email!=='string'||!isRole(normalizeRole(item.role))||typeof item.password_hash!=='string'||!/^scrypt:16384:8:5:[a-f0-9]{32}:[a-f0-9]{64}$/.test(item.password_hash)||![0,1].includes(item.active as number)||!validDate(item.created_at))return false;
   const email=item.email.toLowerCase();
   if(ids.has(item.id)||emails.has(email))return false;
   ids.add(item.id);emails.add(email);
  }
- if(!value.users.some(item=>isObject(item)&&item.id===currentDeveloperId&&item.role==='Developer'&&item.active===1))return false;
+ if(!value.users.some(item=>isObject(item)&&item.id===currentDeveloperId&&isRole(normalizeRole(item.role))&&hasFullAccess(normalizeRole(item.role) as import('../app/permissions.ts').Role)&&item.active===1))return false;
  for(const item of value.audit)if(!isObject(item)||typeof item.id!=='string'||typeof item.action!=='string'||!item.action||!(item.actor_id===null||typeof item.actor_id==='string')||!(item.target_id===null||typeof item.target_id==='string')||!validDate(item.created_at))return false;
  return true;
 }

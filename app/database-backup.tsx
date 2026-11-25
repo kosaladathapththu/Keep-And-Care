@@ -26,7 +26,7 @@ export default function DatabaseBackup(){
   event.target.value='';
   if(!file||busy)return;
   if(file.size>20*1024*1024){setError('Backup file is too large (maximum 20 MB).');return}
-  if(!window.confirm('Restoring replaces system records, user accounts, and audit history with the selected backup. Your active Developer account must be included. Continue?'))return;
+  if(!window.confirm('Restoring replaces system records, user accounts, and audit history with the selected backup. Your active full-access account must be included. Continue?'))return;
   setBusy(true);setError('');setMessage('');
   try{
    const backup=JSON.parse(await file.text()) as unknown;

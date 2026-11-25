@@ -1,7 +1,7 @@
 import { validWriteOrigin,secureSessionCookie } from './request-security';
 import { hashPassword,newToken,tokenHash,constantMatch } from './passwords';
 import { ensureDatabase,executeSql,queryRows,withTransaction } from './database';
-import { isRole,type Role,type SessionUser } from '../app/permissions';
+import { isRole,normalizeRole,hasFullAccess,type Role,type SessionUser } from '../app/permissions';
 export const cookieName='kc_session';
 const lifetime=8*60*60;
 export async function ensureAuth(){await ensureDatabase()}
@@ -9,8 +9,8 @@ export function json(body:unknown,status=200,headers:Record<string,string>={}){r
 export function sameOrigin(request:Request){if(!validWriteOrigin(request,process.env.APP_URL))throw new AuthError('Invalid request origin.',403);if(!request.headers.get('content-type')?.includes('application/json'))throw new AuthError('Send a JSON request.',415)}
 export class AuthError extends Error{constructor(message:string,public status=400){super(message)}}
 export function authFailure(error:unknown){if(error instanceof AuthError)return json({error:error.message},error.status);console.error('Authentication request failed');return json({error:'Unable to process this request.'},500)}
-export async function getUser(request:Request):Promise<SessionUser|null>{await ensureAuth();const token=request.headers.get('cookie')?.split(';').map(value=>value.trim()).find(value=>value.startsWith(cookieName+'='))?.slice(cookieName.length+1);if(!token||!/^[a-f0-9]{64}$/.test(token))return null;const [row]=await queryRows<SessionUser&import('mysql2/promise').RowDataPacket>('SELECT u.id,u.name,u.email,u.role FROM auth_sessions s JOIN auth_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1',[tokenHash(token),Date.now()]);return row&&isRole(row.role)?row:null}
-export async function requireUser(request:Request,role?:Role){const user=await getUser(request);if(!user)throw new AuthError('Please sign in.',401);if(role&&user.role!==role)throw new AuthError('Access denied.',403);return user}
+export async function getUser(request:Request):Promise<SessionUser|null>{await ensureAuth();const token=request.headers.get('cookie')?.split(';').map(value=>value.trim()).find(value=>value.startsWith(cookieName+'='))?.slice(cookieName.length+1);if(!token||!/^[a-f0-9]{64}$/.test(token))return null;const [row]=await queryRows<SessionUser&import('mysql2/promise').RowDataPacket>('SELECT u.id,u.name,u.email,u.role FROM auth_sessions s JOIN auth_users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1',[tokenHash(token),Date.now()]);if(row)row.role=normalizeRole(row.role) as Role;return row&&isRole(row.role)?row:null}
+export async function requireUser(request:Request,role?:Role){const user=await getUser(request);if(!user)throw new AuthError('Please sign in.',401);if(role&&!(role==='Developer'?hasFullAccess(user.role):user.role===role))throw new AuthError('Access denied.',403);return user}
 export function sessionCookie(request:Request,token:string,maxAge=lifetime){return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureSessionCookie(request,process.env.APP_URL)?'; Secure':''}`}
 export async function startSession(request:Request,user:SessionUser){const token=newToken(),now=Date.now();await withTransaction(async connection=>{await connection.execute('DELETE FROM auth_sessions WHERE expires_at<?',[now]);await connection.execute('INSERT INTO auth_sessions (token_hash,user_id,expires_at,created_at) VALUES (?,?,?,?)',[tokenHash(token),user.id,now+lifetime*1000,now])});return json({user},200,{'set-cookie':sessionCookie(request,token)})}
 export async function audit(actor:string|null,action:string,target?:string){await executeSql('INSERT INTO auth_audit (id,actor_id,action,target_id,created_at) VALUES (?,?,?,?,?)',[crypto.randomUUID(),actor,action,target||null,new Date().toISOString()])}

@@ -1,3 +1,4 @@
+import { normalizeRole } from '../../../permissions';
 import { audit,authFailure,json,rateLimit,readObject,requireUser,sameOrigin,startSession,AuthError } from '../../../../lib/auth';
 import { isSystemBackup,type BackupAudit,type BackupUser } from '../../../../lib/backup';
 import { queryRows,withTransaction } from '../../../../lib/database';
@@ -25,7 +26,7 @@ export async function POST(request:Request){
   const input=await readObject(request);
   const candidate=input.backup;
   if((JSON.stringify(candidate)||'').length>20*1024*1024)throw new AuthError('Backup file is too large (maximum 20 MB).',413);
-  if(!isSystemBackup(candidate,actor.id))throw new AuthError('This backup is invalid, unsupported, or does not preserve your active Developer account.');
+  if(!isSystemBackup(candidate,actor.id))throw new AuthError('This backup is invalid, unsupported, or does not preserve your active full-access account.');
   const backup=candidate;
   await withTransaction(async connection=>{
    if(backup.appState){
@@ -35,7 +36,7 @@ export async function POST(request:Request){
    await connection.execute('DELETE FROM auth_limits');
    await connection.execute('DELETE FROM auth_audit');
    await connection.execute('DELETE FROM auth_users');
-   for(const user of backup.users)await connection.execute('INSERT INTO auth_users (id,name,email,role,password_hash,active,created_at) VALUES (?,?,?,?,?,?,?)',[user.id,user.name,user.email,user.role,user.password_hash,user.active,user.created_at]);
+   for(const user of backup.users)await connection.execute('INSERT INTO auth_users (id,name,email,role,password_hash,active,created_at) VALUES (?,?,?,?,?,?,?)',[user.id,user.name,user.email,String(normalizeRole(user.role)),user.password_hash,user.active,user.created_at]);
    for(const entry of backup.audit)await connection.execute('INSERT INTO auth_audit (id,actor_id,action,target_id,created_at) VALUES (?,?,?,?,?)',[entry.id,entry.actor_id,entry.action,entry.target_id,entry.created_at]);
   });
   await audit(actor.id,'backup_restored');
