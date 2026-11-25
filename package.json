@@ -8,9 +8,12 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
-    "start": "vinext start",
+    "start": "node app.js",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "setup:local": "node scripts/setup-local.mjs",
+    "db:check": "node scripts/check-database.mjs",
+    "package:hosting": "node scripts/package-hosting.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -18,9 +21,11 @@
     "fflate": "^0.8.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.9",
+    "mysql2": "^3.24.6",
     "next": "16.2.6",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "vinext": "1.0.0-beta.3"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
@@ -38,7 +43,6 @@
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
-    "vinext": "1.0.0-beta.3",
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },

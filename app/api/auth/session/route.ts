@@ -1,2 +1,3 @@
-import { ensureAuth,getUser,hasUsers,json,localSetup,authFailure } from '../../../../lib/auth';
-export async function GET(request:Request){try{await ensureAuth();const initialized=await hasUsers();return json({user:await getUser(request),setupRequired:!initialized,localSetup:!initialized&&localSetup(request)})}catch(error){return authFailure(error)}}
+import { databaseFailureCode,databaseFailureMessage } from '../../../../lib/database-config';
+import { ensureAuth,getUser,hasUsers,json,localSetup,authFailure,AuthError } from '../../../../lib/auth';
+export async function GET(request:Request){try{await ensureAuth();const initialized=await hasUsers();return json({user:await getUser(request),setupRequired:!initialized,localSetup:!initialized&&localSetup(request)})}catch(error){if(error instanceof AuthError)return authFailure(error);console.error('Authentication session check failed: '+databaseFailureCode(error));return json({error:databaseFailureMessage(error),code:databaseFailureCode(error)},503)}}
