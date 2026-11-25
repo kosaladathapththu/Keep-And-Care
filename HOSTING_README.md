@@ -38,9 +38,9 @@ The application root contains app.js, app.cjs, package.json and dist. The docume
 2. Create a NEW database, for example suffix knc_v2. Copy the full database name cPanel displays, including its account prefix.
 3. Create a dedicated database user, for example suffix kncapp, with a strong generated password. Save the full prefixed username and password privately.
 4. Assign this user to the NEW database with ALL PRIVILEGES on that database only.
-5. Open phpMyAdmin, select the new database in the left sidebar, choose Import, and import **database/schema.mysql.sql** from the extracted package. Five tables should appear: app_state, auth_users, auth_sessions, auth_limits, auth_audit.
+5. Open phpMyAdmin, select the new database in the left sidebar, choose Import, and import **database/schema.mysql.sql** from the extracted package. Six tables should appear: app_state, auth_users, auth_sessions, auth_limits, auth_audit, historical_reports.
 
-Do not import an unrelated AeroSoft360 dump or an old relational-schema dump into this database. This app uses the five-table schema supplied in the package. A fresh database starts with no jobs, financial transactions, customers or staff; service and payment settings are provided. Existing records are not automatically migrated. A compatible Keep & Care system backup can be restored later by a Developer; restoration replaces records and users.
+Do not import an unrelated AeroSoft360 dump or an old relational-schema dump into this database. This app uses the application schema supplied in the package. A fresh database starts with no jobs, financial transactions, customers or staff; service and payment settings are provided. Existing records are not automatically migrated. A compatible Keep & Care system backup can be restored later by a Developer; restoration replaces records and users.
 
 XAMPP runs on your PC only. On hosting, DB_HOST=localhost normally means the HOSTING server's MySQL service, not your PC. Use a different host/port only if the provider specifies it. Never use the local root account or a blank password on hosting.
 
@@ -189,3 +189,7 @@ Upload the newly generated Keep-And-Care-knc-cPanel.zip. Do not mix old dist fil
 - cPanel Passenger applications: https://docs.cpanel.net/knowledge-base/web-services/using-passenger-applications/
 
 This package was built and tested locally. It has not been uploaded to or verified on your hosting account; complete the checks above after deployment.
+
+## Historical monthly workbooks
+
+Open Reports > Previous reports to upload .xlsx workbooks. Choose up to ten files at a time (5 MB per file, 20 MB total). Confirm a month and year for each, preview the sheets, and save. The library supports multiple years and multiple files in one month, with search, month editing, original-file download, and deletion. Exact duplicate file contents are skipped. Files are stored privately in historical_reports in MySQL, not in the public document root. Uploading a historical workbook does not post jobs, transactions, balances or payroll into live records. System backups include the workbooks up to the 20 MB backup limit; use a cPanel database backup for larger archives.

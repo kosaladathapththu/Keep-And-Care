@@ -8,7 +8,7 @@ export function isRole(value:unknown):value is Role{return roles.includes(value 
 export function hasFullAccess(role:Role){return role==='GM'||role==='Assistant'||role==='Developer'}
 export function canFinance(role:Role){return role==='CFO'||hasFullAccess(role)}
 export function canOperate(role:Role){return hasFullAccess(role)}
-export function canSection(role:Role,section:string){if(section==='Users')return hasFullAccess(role);if(section==='Finance')return canFinance(role);if(section==='New job')return canOperate(role);return ['Overview','Jobs','Customers','Staff','Reports','Settings','Account'].includes(section)}
+export function canSection(role:Role,section:string){if(section==='Users')return hasFullAccess(role);if(section==='Finance'||section==='Previous reports')return canFinance(role);if(section==='New job')return canOperate(role);return ['Overview','Jobs','Customers','Staff','Reports','Settings','Account'].includes(section)}
 export function canReport(role:Role,name:string){return canFinance(role)||['Jobs Register','Outstanding Customer Balances'].includes(name)}
 export function canEditRecord(role:Role,kind:RecordKind){return hasFullAccess(role)||['job','staff','transaction','paymentMethod','expenseCategory'].includes(kind)}
 export function canDeleteRecord(role:Role,kind:RecordKind){return canEditRecord(role,kind)&&!(role==='CFO'&&['job','staff'].includes(kind))}
