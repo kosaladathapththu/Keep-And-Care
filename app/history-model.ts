@@ -1,7 +1,7 @@
 import type { CellValue } from 'exceljs';
 
 export type HistoricalReport={id:string;fileName:string;period:string;bytes:number;uploadedAt:string;uploadedBy:string;sheetNames:string[]};
-export type HistoricalSheet={name:string;columns:string[];rows:{number:number;cells:(string|number)[]}[]};
+export type HistoricalSheet={name:string;columns:string[];inheritedDates?:{row:number;column:number;value:string}[];rows:{number:number;cells:(string|number)[]}[]};
 export type WorkbookPreview={sheets:HistoricalSheet[];suggestedPeriod:string;warnings:string[]};
 export const maxWorkbookBytes=5*1024*1024;
 export function validPeriod(value:unknown):value is string{return typeof value==='string'&&/^(19|20|21)\d{2}-(0[1-9]|1[0-2])$/.test(value)}
@@ -41,15 +41,15 @@ export async function readHistoricalWorkbook(bytes:Uint8Array,fileName:string):P
  const warnings=new Set<string>(),sheets:HistoricalSheet[]=[];let cellCount=0;
  for(const sheet of workbook.worksheets){
   if(sheet.rowCount>10000||sheet.columnCount>150)throw Error('A sheet exceeds 10,000 rows or 150 columns.');
-  const rows:HistoricalSheet['rows']=[];let lastColumn=0;
+  const rows:HistoricalSheet['rows']=[],inheritedDates:NonNullable<HistoricalSheet['inheritedDates']>=[];let lastColumn=0;
   sheet.eachRow((row,number)=>{const cells:(string|number)[]=[];row.eachCell((cell,column)=>{
-   if(cell.isMerged&&cell.master.address!==cell.address)return;
+   if(cell.isMerged&&cell.master.address!==cell.address){const inherited=cellDisplay(cell.value);if(typeof inherited==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(inherited)){if(inheritedDates.length>=100000)throw Error('Too many merged date cells.');inheritedDates.push({row:number,column:column-1,value:inherited})}return;}
    const value=cellDisplay(cell.value);if(value==='')return;
    if(++cellCount>100000)throw Error('This workbook contains too many populated cells (maximum 100,000).');
    if(value==='[Formula: no saved result]')warnings.add('Some formulas have no saved result. Open and save the workbook in Excel to refresh them.');
    cells[column-1]=value;lastColumn=Math.max(lastColumn,column);
   });if(cells.length)rows.push({number,cells:Array.from(cells,value=>value??'')})});
-  sheets.push({name:sheet.name,columns:Array.from({length:lastColumn},(_,i)=>columnName(i+1)),rows});
+  sheets.push({name:sheet.name,inheritedDates,columns:Array.from({length:lastColumn},(_,i)=>columnName(i+1)),rows});
  }
  if(!sheets.some(sheet=>sheet.rows.length))throw Error('This workbook has no visible cell content.');
  if(workbook.worksheets.some(sheet=>sheet.state!=='visible'))warnings.add('The workbook contains hidden sheets. All sheets are included in the historical preview.');

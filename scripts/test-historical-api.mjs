@@ -14,7 +14,7 @@ const connection=await mysql.createConnection({host:local.DB_HOST,port:Number(lo
 const child=spawn(process.execPath,['app.js'],{cwd:stage,env,stdio:['ignore','pipe','pipe']});let logs='';child.stdout.on('data',chunk=>logs+=chunk);child.stderr.on('data',chunk=>logs+=chunk);
 const ids=[],reportIds=[];const origin='https://knc.supuncompanies.com',base='http://127.0.0.1:3108';let cookie='';
 async function api(path,options={}){return fetch(base+path,{...options,headers:{origin,'x-forwarded-host':'knc.supuncompanies.com','x-forwarded-proto':'https',...(cookie?{cookie}:{}),...options.headers}})}
-const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('CASH FLOW');sheet.addRow(['MONTH :- OCTOBER','YEAR :- 2026']);sheet.addRow(['Synthetic test report',randomUUID()]);sheet.addRow(['Date','Receipt']);sheet.addRow([new Date('2026-10-01'),150]);
+const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('CASH FLOW');sheet.addRow(['MONTH :- OCTOBER','YEAR :- 2026']);sheet.addRow(['Synthetic test report',randomUUID()]);sheet.addRow(['DATE','JOB NUMBER','DESCRIPTION','CASH IN','CASH OUT','BALANCE']);sheet.addRow([new Date('2026-10-01'),'1','Test service',150,0,150]);
 const bytes=new Uint8Array(await book.xlsx.writeBuffer()),id=createHash('sha256').update(bytes).digest('hex');reportIds.push(id);
 try{
  let ready=false;for(let n=0;n<80;n++){try{const r=await fetch(base+'/api/auth/session');if(r.ok){ready=true;break}}catch{}await new Promise(resolve=>setTimeout(resolve,250));}assert.ok(ready,logs);
@@ -29,12 +29,13 @@ try{
  response=await api('/api/historical-reports',{method:'POST',body:form()});assert.equal((await response.json()).duplicates,1);
  response=await api('/api/historical-reports');assert.ok((await response.json()).reports.some(report=>report.id===id));
  response=await api('/api/historical-reports?id='+id+'&preview=1');assert.equal(response.status,200,await response.clone().text());assert.equal((await response.json()).sheets[0].name,'CASH FLOW');
+ response=await api('/api/historical-reports?id='+id+'&generated=1');assert.equal(response.status,200,await response.clone().text());const generated=await response.json();assert.equal(generated.reports[0].name,'Cash Flow Statement');assert.equal(generated.reports[0].rows.at(-1)[3],150);
  response=await api('/api/historical-reports?id='+id);assert.deepEqual(new Uint8Array(await response.arrayBuffer()),bytes);
  response=await api('/api/historical-reports',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({id,period:'2025-12'})});assert.equal(response.status,200);
  response=await api('/api/admin/backup');assert.equal(response.status,200,await response.clone().text());const backup=(await response.json()).backup;assert.ok(backup.historicalReports.some(report=>report.id===id&&report.period==='2025-12'));
  const [after]=await connection.query('SELECT payload FROM app_state WHERE id=1');assert.deepEqual(after,before,'Historical uploads must not change operational records.');
  response=await api('/api/historical-reports?id='+id,{method:'DELETE'});assert.equal(response.status,200);
- console.log('Production integration passed: authentication, origin protection, upload, duplicate detection, list, all-sheet preview, byte-exact download, month edit, backup inclusion, delete, and unchanged business records.');
+ console.log('Production integration passed: authentication, origin protection, upload, duplicate detection, list, all-sheet preview, automatic report generation, byte-exact download, month edit, backup inclusion, delete, and unchanged business records.');
 }finally{
  for(const id of reportIds)await connection.execute('DELETE FROM historical_reports WHERE id=?',[id]);
  for(const id of ids){await connection.execute('DELETE FROM auth_sessions WHERE user_id=?',[id]);await connection.execute('DELETE FROM auth_audit WHERE actor_id=?',[id]);await connection.execute('DELETE FROM auth_users WHERE id=?',[id]);}

@@ -1,3 +1,4 @@
+import {generateWorkbookReports} from '../../workbook-reports';
 ﻿import { createHash } from 'node:crypto';
 import type { RowDataPacket } from 'mysql2/promise';
 import { audit,authFailure,AuthError,json,rateLimit,readObject,requireUser } from '../../../lib/auth';
@@ -14,6 +15,7 @@ export async function GET(request:Request){try{
  if(!id){const rows=await queryRows<Row>('SELECT id,file_name,period,bytes,uploaded_at,uploaded_by,sheet_names FROM historical_reports ORDER BY period DESC,uploaded_at DESC');return json({reports:rows.map(metadata)})}
  if(!/^[a-f0-9]{64}$/.test(id))throw new AuthError('Invalid report identifier.');
  const [row]=await queryRows<Row>('SELECT * FROM historical_reports WHERE id=?',[id]);if(!row)throw new AuthError('Report not found.',404);
+ if(url.searchParams.get('generated')==='1'){const preview=await readHistoricalWorkbook(new Uint8Array(row.content),row.file_name);return json({...metadata(row),...generateWorkbookReports(preview,row.period)})}
  if(url.searchParams.get('preview')==='1')return json({...metadata(row),...await readHistoricalWorkbook(new Uint8Array(row.content),row.file_name)});
  return new Response(new Uint8Array(row.content),{headers:{'content-type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','content-disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(row.file_name),'cache-control':'no-store, private','x-content-type-options':'nosniff'}});
  }catch(error){return authFailure(error)}}
